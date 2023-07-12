@@ -4,8 +4,10 @@
 #include <ESPAsyncWebServer.h>
 #include <SPIFFS.h>
 
+#include "WifiCredentials.h"
+
 #define SAMPLE_INTERVAL 4
-#define SAMPLE_COUNT (800/SAMPLE_INTERVAL)
+#define SAMPLE_COUNT (1400/SAMPLE_INTERVAL)
 
 #define ENC_AR 22
 #define ENC_BR 23
@@ -20,8 +22,6 @@
 #define MOT_AL 16
 #define MOT_BL 5
 #define MOT_PWML 21
-
-const char* ssid = "Segredo";
 
 AsyncWebServer server(80);
 
@@ -43,10 +43,13 @@ volatile bool start = false;
 void setup() {
   Serial.begin(115200);
   SPIFFS.begin();
-  WiFi.softAP(ssid);
-  IPAddress IP = WiFi.softAPIP();
-  Serial.print("AP IP address: ");
-  Serial.println(IP);
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(SPIFFS, "/index.html");
@@ -81,7 +84,11 @@ void loop() {
   File file = SPIFFS.open("/teste.txt", FILE_WRITE);
   // Motor
 
-  file.println("LEFT, RIGHT");
+  file.println("LEFT RIGHT");
+  
+  volatile int left_count = 0;
+  volatile int right_count = 0;
+
   motor_start();
 
   for (size_t i = 0; i < SAMPLE_COUNT; i++) {
@@ -92,7 +99,7 @@ void loop() {
   }
   analogWrite(MOT_PWML, 0);
   analogWrite(MOT_PWMR, 0);
-  for (size_t i = 0; i < SAMPLE_COUNT; i++) {
+  for (size_t i = 0; i < SAMPLE_COUNT/2; i++) {
     file.print(left_count);
     file.print(" ");
     file.println(right_count);
@@ -134,6 +141,6 @@ void motor_start() {
   digitalWrite(MOT_BL, LOW);
   digitalWrite(MOT_AR, HIGH);
   digitalWrite(MOT_BR, LOW);
-  analogWrite(MOT_PWML, 140);
-  analogWrite(MOT_PWMR, 140);
+  analogWrite(MOT_PWML, 100);
+  analogWrite(MOT_PWMR, 100);
 }
