@@ -1,5 +1,8 @@
 #include <Arduino.h>
-#include "BluetoothSerial.h"
+#include <WiFi.h>
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#include <SPIFFS.h>
 
 #define SAMPLE_INTERVAL 4
 #define SAMPLE_COUNT (800/SAMPLE_INTERVAL)
@@ -18,7 +21,11 @@
 #define MOT_BL 5
 #define MOT_PWML 21
 
-BluetoothSerial BT;
+const char* ssid = "Segredo";
+
+AsyncWebServer server(80);
+
+// AsyncWebSocket ws("/ws");
 
 void IRAM_ATTR left_A();
 void IRAM_ATTR right_A();
@@ -31,9 +38,34 @@ volatile int right_count = 0;
 
 void motor_start();
 
+volatile bool start = false;
+
 void setup() {
-  // Bluetooth
-  BT.begin("Segredo_FF");
+  Serial.begin(115200);
+  SPIFFS.begin();
+  WiFi.softAP(ssid);
+  IPAddress IP = WiFi.softAPIP();
+  Serial.print("AP IP address: ");
+  Serial.println(IP);
+
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(SPIFFS, "/index.html");
+  });
+
+  server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(SPIFFS, "/style.css", "text/css");
+  });
+
+  server.on("/start", HTTP_GET, [](AsyncWebServerRequest *request){
+    start = true;
+    request->send(SPIFFS, "/index.html");
+  });
+
+  server.on("/view", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(SPIFFS, "/teste.txt");
+  });
+  
+  server.begin();
 
   // Encoder
   attachInterrupt(digitalPinToInterrupt(ENC_AL), left_A, CHANGE);
@@ -43,29 +75,32 @@ void setup() {
 }
 
 void loop() {
-  while (!BT.available()) continue;
-  while (BT.available()) BT.read();
 
+  while (!start) continue;
+
+  File file = SPIFFS.open("/teste.txt", FILE_WRITE);
   // Motor
-  
-  BT.println("-----\nLEFT, RIGHT");
+
+  file.println("LEFT, RIGHT");
   motor_start();
 
   for (size_t i = 0; i < SAMPLE_COUNT; i++) {
-    BT.print(left_count);
-    BT.print(" ");
-    BT.println(right_count);
+    file.print(left_count);
+    file.print(" ");
+    file.println(right_count);
     vTaskDelay(pdMS_TO_TICKS(SAMPLE_INTERVAL));
   }
   analogWrite(MOT_PWML, 0);
   analogWrite(MOT_PWMR, 0);
   for (size_t i = 0; i < SAMPLE_COUNT; i++) {
-    BT.print(left_count);
-    BT.print(" ");
-    BT.println(right_count);
+    file.print(left_count);
+    file.print(" ");
+    file.println(right_count);
     vTaskDelay(pdMS_TO_TICKS(SAMPLE_INTERVAL));
   }
-  BT.println("-----");
+  file.close();
+
+  start = false;
 }
 
 void IRAM_ATTR left_A() {
