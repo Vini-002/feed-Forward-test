@@ -30,8 +30,14 @@ void setup() {
   const unsigned MEASUREMENTS = 5000000;
   uint64_t start_t = esp_timer_get_time();
 
+  volatile uint8_t _pin_al = 17, _pin_bl = 18, _pin_ar = 22, _pin_br = 23;
+  volatile int left_count = 0;
+  volatile int right_count = 0;
+
+
   for (int retries = 0; retries < MEASUREMENTS; retries++) {
-    testando = 500.f/test; 
+      if ((GPIO.in >> _pin_ar) ^ (GPIO.in >> _pin_br) & 1) right_count += 1;// if (digitalRead(_pin_ar) != digitalRead(_pin_br)) right_count += 1;
+      else right_count -= 1;
   }
 
   uint64_t end = esp_timer_get_time();
@@ -72,8 +78,6 @@ void loop() {
 
   while (!start) continue;
 
-  Encoder::start_time = micros();
-
   // Motor
   motor_start();
   vTaskDelay(pdMS_TO_TICKS(ON_TIME));
@@ -82,12 +86,12 @@ void loop() {
   vTaskDelay(pdMS_TO_TICKS(OFF_TIME));
 
   File file = SPIFFS.open("/teste.txt", FILE_WRITE);
-  file.println("LEFT RIGHT");
-  for (size_t i = 0; i < BUFFER_SIZE; i++) {
-    if (Encoder::left_times[i] == 0 && Encoder::right_times[i] == 0) break;
+  // file.println("LEFT RIGHT");
+  // for (size_t i = 0; i < BUFFER_SIZE; i++) {
+  //   if (Encoder::left_times[i] == 0 && Encoder::right_times[i] == 0) break;
 
-    file.printf("%li %li\n", Encoder::left_times[i], Encoder::right_times[i]);
-  }
+  //   file.printf("%li %li\n", Encoder::left_times[i], Encoder::right_times[i]);
+  // }
   
   file.close();
 
