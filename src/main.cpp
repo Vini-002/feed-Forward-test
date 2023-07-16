@@ -1,47 +1,44 @@
 #include <Arduino.h>
 #include <WiFi.h>
-#include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <SPIFFS.h>
 
 #include "WifiCredentials.h"
+#include "Pinout.h"
 
-#define SAMPLE_INTERVAL 4
-#define SAMPLE_COUNT (1400/SAMPLE_INTERVAL)
+#include "Encoder.h"
 
-#define ENC_AR 22
-#define ENC_BR 23
-
-#define ENC_AL 17
-#define ENC_BL 18
-
-#define MOT_AR 14
-#define MOT_BR 15
-#define MOT_PWMR 19
-
-#define MOT_AL 16
-#define MOT_BL 5
-#define MOT_PWML 21
+#define ON_TIME 300
+#define OFF_TIME 0
 
 AsyncWebServer server(80);
-
-// AsyncWebSocket ws("/ws");
-
-void IRAM_ATTR left_A();
-void IRAM_ATTR right_A();
-
-void IRAM_ATTR left_B();
-void IRAM_ATTR right_B();
-
-volatile int left_count = 0;
-volatile int right_count = 0;
 
 void motor_start();
 
 volatile bool start = false;
 
 void setup() {
+
   Serial.begin(115200);
+
+
+  #include "esp_timer.h"
+
+  volatile int test = 65530;
+  volatile float testando;
+
+  const unsigned MEASUREMENTS = 5000000;
+  uint64_t start_t = esp_timer_get_time();
+
+  for (int retries = 0; retries < MEASUREMENTS; retries++) {
+    testando = 500.f/test; 
+  }
+
+  uint64_t end = esp_timer_get_time();
+
+  Serial.printf("%u iterations took %llu milliseconds (%llu microseconds per invocation)\nResult: %.15f",
+          MEASUREMENTS, (end - start_t)/1000, (end - start_t)/MEASUREMENTS, testando);
+
   SPIFFS.begin();
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
@@ -69,65 +66,32 @@ void setup() {
   });
   
   server.begin();
-
-  // Encoder
-  attachInterrupt(digitalPinToInterrupt(ENC_AL), left_A, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(ENC_AR), right_A, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(ENC_BL), left_B, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(ENC_BR), right_B, CHANGE);
 }
 
 void loop() {
 
   while (!start) continue;
 
-  File file = SPIFFS.open("/teste.txt", FILE_WRITE);
+  Encoder::start_time = micros();
+
   // Motor
-
-  file.println("LEFT RIGHT");
-  
-  volatile int left_count = 0;
-  volatile int right_count = 0;
-
   motor_start();
-
-  for (size_t i = 0; i < SAMPLE_COUNT; i++) {
-    file.print(left_count);
-    file.print(" ");
-    file.println(right_count);
-    vTaskDelay(pdMS_TO_TICKS(SAMPLE_INTERVAL));
-  }
+  vTaskDelay(pdMS_TO_TICKS(ON_TIME));
   analogWrite(MOT_PWML, 0);
   analogWrite(MOT_PWMR, 0);
-  for (size_t i = 0; i < SAMPLE_COUNT/2; i++) {
-    file.print(left_count);
-    file.print(" ");
-    file.println(right_count);
-    vTaskDelay(pdMS_TO_TICKS(SAMPLE_INTERVAL));
+  vTaskDelay(pdMS_TO_TICKS(OFF_TIME));
+
+  File file = SPIFFS.open("/teste.txt", FILE_WRITE);
+  file.println("LEFT RIGHT");
+  for (size_t i = 0; i < BUFFER_SIZE; i++) {
+    if (Encoder::left_times[i] == 0 && Encoder::right_times[i] == 0) break;
+
+    file.printf("%li %li\n", Encoder::left_times[i], Encoder::right_times[i]);
   }
+  
   file.close();
 
   start = false;
-}
-
-void IRAM_ATTR left_A() {
-  if (digitalRead(ENC_AL) != digitalRead(ENC_BL)) left_count += 1;
-  else left_count -= 1;
-}
-
-void IRAM_ATTR right_A() {
-  if (digitalRead(ENC_AR) != digitalRead(ENC_BR)) right_count += 1;
-  else right_count -= 1;
-}
-
-void IRAM_ATTR left_B() {
-  if (digitalRead(ENC_AL) == digitalRead(ENC_BL)) left_count += 1;
-  else left_count -= 1;
-}
-
-void IRAM_ATTR right_B() {
-  if (digitalRead(ENC_AR) == digitalRead(ENC_BR)) right_count += 1;
-  else right_count -= 1;
 }
 
 void motor_start() {
