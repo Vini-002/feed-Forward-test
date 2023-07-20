@@ -1,101 +1,85 @@
 #include <Arduino.h>
-#include <WiFi.h>
-#include <ESPAsyncWebServer.h>
-#include <SPIFFS.h>
+#include "time.h"
 
-#include "WifiCredentials.h"
 #include "Pinout.h"
-
 #include "Encoder.h"
+#include "MyWebServer.h"
 
 #define ON_TIME 300
 #define OFF_TIME 0
 
-AsyncWebServer server(80);
+const char* ntpServer = "pool.ntp.org";
+const long  gmtOffset_sec = -3*3600;
+const int   daylightOffset_sec = 0;
 
 void motor_start();
+int pwm_value;
 
 volatile bool start = false;
 
 void setup() {
-
   Serial.begin(115200);
-
-
-  #include "esp_timer.h"
-
-  volatile int test = 65530;
-  volatile float testando;
-
-  const unsigned MEASUREMENTS = 5000000;
-  uint64_t start_t = esp_timer_get_time();
-
-  volatile uint8_t _pin_al = 17, _pin_bl = 18, _pin_ar = 22, _pin_br = 23;
-  volatile int left_count = 0;
-  volatile int right_count = 0;
-
-
-  for (int retries = 0; retries < MEASUREMENTS; retries++) {
-      if ((GPIO.in >> _pin_ar) ^ (GPIO.in >> _pin_br) & 1) right_count += 1;// if (digitalRead(_pin_ar) != digitalRead(_pin_br)) right_count += 1;
-      else right_count -= 1;
-  }
-
-  uint64_t end = esp_timer_get_time();
-
-  Serial.printf("%u iterations took %llu milliseconds (%llu microseconds per invocation)\nResult: %.15f",
-          MEASUREMENTS, (end - start_t)/1000, (end - start_t)/MEASUREMENTS, testando);
-
-  SPIFFS.begin();
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
-
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/index.html");
-  });
-
-  server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/style.css", "text/css");
-  });
-
-  server.on("/start", HTTP_GET, [](AsyncWebServerRequest *request){
-    start = true;
-    request->send(SPIFFS, "/index.html");
-  });
-
-  server.on("/view", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/teste.txt");
-  });
-  
-  server.begin();
+  MyWebServer::setup();
+  Encoder::setup();
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  // disableCore1WDT();
 }
 
 void loop() {
-
   while (!start) continue;
+  start = false;
+  vTaskDelay(600);
+
+  // MyWebServer::server.end();
+  // vTaskDelay(pdMS_TO_TICKS(ON_TIME));
+
+  // vTaskDelay(pdMS_TO_TICKS(OFF_TIME));
+
+  int left_buffer[200];
+  int right_buffer[200];
+  unsigned int time_buffer[200]; 
+
+  struct tm timeinfo;
+  getLocalTime(&timeinfo);
+  char filename[40];
+  sprintf(filename, "/exp01/pwm_%03d", pwm_value);
+  strftime(filename + strlen(filename), 40, "_%T.csv", &timeinfo);
+
+  unsigned long start_time = millis();
+  const int DURATION = 800;
+  const int SAMPLE_INTERVAL = 4;
 
   // Motor
+  Encoder::left_count = 0;
+  Encoder::right_count = 0;
   motor_start();
-  vTaskDelay(pdMS_TO_TICKS(ON_TIME));
+  int i = 0;
+
+  for (size_t i = 0; i < 200; i++)
+  {
+    int last_sample = millis();
+    while (millis() - last_sample <= SAMPLE_INTERVAL) continue;
+    // file.printf("%d %d\n", Encoder::left_count, Encoder::right_count);
+    time_buffer[i] = (int) (millis() - start_time);
+    right_buffer[i] = Encoder::right_count;
+    left_buffer[i] = Encoder::left_count;
+  }
   analogWrite(MOT_PWML, 0);
   analogWrite(MOT_PWMR, 0);
-  vTaskDelay(pdMS_TO_TICKS(OFF_TIME));
 
-  File file = SPIFFS.open("/teste.txt", FILE_WRITE);
-  // file.println("LEFT RIGHT");
-  // for (size_t i = 0; i < BUFFER_SIZE; i++) {
-  //   if (Encoder::left_times[i] == 0 && Encoder::right_times[i] == 0) break;
+  File file = LittleFS.open(filename, FILE_WRITE, true);
+  file.println("Time Left Right");
 
-  //   file.printf("%li %li\n", Encoder::left_times[i], Encoder::right_times[i]);
-  // }
+  for (size_t i = 0; i < 200; i++)
+  {
+    file.printf("%d %d %d\n", time_buffer[i], left_buffer[i], right_buffer[i]);
+  }
   
+  File exp_list = LittleFS.open("/exp_list.txt", FILE_APPEND);
+  exp_list.println(file.name());
+  exp_list.close();
   file.close();
-
-  start = false;
+  // MyWebServer::restart();
 }
 
 void motor_start() {
@@ -109,6 +93,6 @@ void motor_start() {
   digitalWrite(MOT_BL, LOW);
   digitalWrite(MOT_AR, HIGH);
   digitalWrite(MOT_BR, LOW);
-  analogWrite(MOT_PWML, 100);
-  analogWrite(MOT_PWMR, 100);
+  analogWrite(MOT_PWML, pwm_value);
+  analogWrite(MOT_PWMR, pwm_value);
 }

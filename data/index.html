@@ -8,6 +8,21 @@
 </head>
 <body>
   <h1>Segredo</h1>
+  <h2>PWM value</h2>
+  <p>
+    <span id="textSliderValue">%SLIDERVALUE%</span>
+  </p>
+  <p><input type="range" onchange="updateSliderPWM(this)" id="pwmSlider" min="0" max="255" value="%SLIDERVALUE%" step="28" class="slider"></p>
+  <script>
+    function updateSliderPWM(element) {
+      var sliderValue = document.getElementById("pwmSlider").value;
+      document.getElementById("textSliderValue").innerHTML = sliderValue;
+      console.log(sliderValue);
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", "/slider?value="+sliderValue, true);
+      xhr.send();
+    }
+  </script>
   <p><a href="/start"><button class="button">START</button></a></p>
   <p><a href="/view"><button class="button">VIEW</button></a></p>
 </body>

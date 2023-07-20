@@ -1,10 +1,14 @@
 #pragma once
 #include <Arduino.h>
 
+#define ENC_AL 17
+#define ENC_BL 18
+
+#define ENC_AR 22
+#define ENC_BR 23
+
 namespace Encoder
 {
-  uint8_t _pin_al, _pin_bl, _pin_ar, _pin_br;
-
   void IRAM_ATTR left_A();
   void IRAM_ATTR right_A();
 
@@ -14,38 +18,54 @@ namespace Encoder
   volatile int left_count = 0;
   volatile int right_count = 0;
 
-  void setup(uint8_t pin_al, uint8_t pin_bl, uint8_t pin_ar, uint8_t pin_br);
+  void setup();
 };
 
-void Encoder::setup(uint8_t pin_al, uint8_t pin_bl, uint8_t pin_ar, uint8_t pin_br)
+void Encoder::setup()
 {
-  _pin_al = pin_al;
-  _pin_bl = pin_bl;
-  _pin_ar = pin_ar;
-  _pin_br = pin_br;
-  attachInterrupt(digitalPinToInterrupt(_pin_al), left_A, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(_pin_ar), right_A, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(_pin_bl), left_B, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(_pin_br), right_B, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ENC_AL), left_A, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ENC_AR), right_A, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ENC_BL), left_B, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ENC_BR), right_B, CHANGE);
 }
+
+// void IRAM_ATTR Encoder::left_A() {
+//   if (digitalRead(ENC_AL) != digitalRead(ENC_BL)) left_count += 1;
+//   else left_count -= 1;
+// }
+
+// void IRAM_ATTR Encoder::right_A() {
+//   if (digitalRead(ENC_AR) != digitalRead(ENC_BR)) right_count += 1;
+//   else right_count -= 1;
+// }
+
+// void IRAM_ATTR Encoder::left_B() {
+//   if (digitalRead(ENC_AL) == digitalRead(ENC_BL)) left_count += 1;
+//   else left_count -= 1;
+// }
+
+// void IRAM_ATTR Encoder::right_B() {
+//   if (digitalRead(ENC_AR) == digitalRead(ENC_BR)) right_count += 1;
+//   else right_count -= 1;
+// }
 
 
 void IRAM_ATTR Encoder::left_A() {
-  if ((GPIO.in >> _pin_al) ^ (GPIO.in >> _pin_bl) & 0x01) left_count += 1;
+  if (((GPIO.in >> ENC_AL) & 0x01) != ((GPIO.in >> ENC_BL) & 0x01)) left_count += 1;
   else left_count -= 1;
 }
 
 void IRAM_ATTR Encoder::right_A() {
-  if ((GPIO.in >> _pin_ar) ^ (GPIO.in >> _pin_br) & 0x01) right_count += 1;
+  if (((GPIO.in >> ENC_AR) & 0x01) != ((GPIO.in >> ENC_BR) & 0x01)) right_count += 1;
   else right_count -= 1;
 }
 
 void IRAM_ATTR Encoder::left_B() {
-  if ((GPIO.in >> _pin_al) ^ (GPIO.in >> _pin_bl) & 0x01) left_count -= 1;
-  else left_count += 1;
+  if (((GPIO.in >> ENC_AL) & 0x01) == ((GPIO.in >> ENC_BL) & 0x01)) left_count += 1;
+  else left_count -= 1;
 }
 
 void IRAM_ATTR Encoder::right_B() {
-  if ((GPIO.in >> _pin_ar) ^ (GPIO.in >> _pin_br) & 0x01) right_count -= 1;
-  else right_count += 1;
+  if (((GPIO.in >> ENC_AR) & 0x01) == ((GPIO.in >> ENC_BR) & 0x01)) right_count += 1;
+  else right_count -= 1;
 }
