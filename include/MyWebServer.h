@@ -50,8 +50,8 @@ void MyWebServer::restart() {
   });
 
   server.on("/start", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(200, "text/plain", "OK");
     start = true;
-    request->send(LittleFS, "/index.html", String(), false, processor);
   });
 
   server.on("/view", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -70,7 +70,6 @@ void MyWebServer::restart() {
     else {
       inputMessage = "No message sent";
     }
-    Serial.println(inputMessage);
     request->send(200, "text/plain", "OK");
   });
 

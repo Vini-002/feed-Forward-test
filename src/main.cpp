@@ -22,18 +22,11 @@ void setup() {
   MyWebServer::setup();
   Encoder::setup();
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-  // disableCore1WDT();
 }
 
 void loop() {
   while (!start) continue;
   start = false;
-  vTaskDelay(600);
-
-  // MyWebServer::server.end();
-  // vTaskDelay(pdMS_TO_TICKS(ON_TIME));
-
-  // vTaskDelay(pdMS_TO_TICKS(OFF_TIME));
 
   int left_buffer[200];
   int right_buffer[200];
@@ -42,7 +35,7 @@ void loop() {
   struct tm timeinfo;
   getLocalTime(&timeinfo);
   char filename[40];
-  sprintf(filename, "/exp01/pwm_%03d", pwm_value);
+  sprintf(filename, "/testes/pwm_%03d", pwm_value);
   strftime(filename + strlen(filename), 40, "_%T.csv", &timeinfo);
 
   unsigned long start_time = millis();
@@ -53,7 +46,6 @@ void loop() {
   Encoder::left_count = 0;
   Encoder::right_count = 0;
   motor_start();
-  int i = 0;
 
   for (size_t i = 0; i < 200; i++)
   {
@@ -70,16 +62,14 @@ void loop() {
   File file = LittleFS.open(filename, FILE_WRITE, true);
   file.println("Time Left Right");
 
-  for (size_t i = 0; i < 200; i++)
-  {
-    file.printf("%d %d %d\n", time_buffer[i], left_buffer[i], right_buffer[i]);
+  for (size_t i = 0; i < 200; i++) {
+    file.printf("%5d %5d %5d\n", time_buffer[i], left_buffer[i], right_buffer[i]);
   }
   
   File exp_list = LittleFS.open("/exp_list.txt", FILE_APPEND);
   exp_list.println(file.name());
   exp_list.close();
   file.close();
-  // MyWebServer::restart();
 }
 
 void motor_start() {

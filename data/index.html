@@ -15,15 +15,21 @@
   <p><input type="range" onchange="updateSliderPWM(this)" id="pwmSlider" min="0" max="255" value="%SLIDERVALUE%" step="28" class="slider"></p>
   <script>
     function updateSliderPWM(element) {
-      var sliderValue = document.getElementById("pwmSlider").value;
+      var sliderValue = element.value;
       document.getElementById("textSliderValue").innerHTML = sliderValue;
-      console.log(sliderValue);
       var xhr = new XMLHttpRequest();
-      xhr.open("GET", "/slider?value="+sliderValue, true);
+      xhr.open("GET", "/slider?value="+sliderValue);
       xhr.send();
     }
   </script>
-  <p><a href="/start"><button class="button">START</button></a></p>
+  <p><button class="button" onclick="start()">START</button></p>
+  <script>
+    function start() {
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", "/start");
+      xhr.send();
+    }
+  </script>
   <p><a href="/view"><button class="button">VIEW</button></a></p>
 </body>
 </html>
