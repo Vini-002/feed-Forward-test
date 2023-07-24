@@ -42,6 +42,8 @@ void loop() {
   const int DURATION = 800;
   const int SAMPLE_INTERVAL = 4;
 
+  int saturation = min(pwm_value, 255 - pwm_value);
+
   // Motor
   Encoder::left_count = 0;
   Encoder::right_count = 0;
@@ -51,6 +53,13 @@ void loop() {
   {
     int last_sample = millis();
     while (millis() - last_sample <= SAMPLE_INTERVAL) continue;
+
+    int angle = Encoder::right_count - Encoder::left_count;
+
+    angle = constrain(angle, -saturation, saturation);
+    analogWrite(MOT_PWML, pwm_value + angle);
+    analogWrite(MOT_PWMR, pwm_value - angle);
+
     // file.printf("%d %d\n", Encoder::left_count, Encoder::right_count);
     time_buffer[i] = (int) (millis() - start_time);
     right_buffer[i] = Encoder::right_count;
