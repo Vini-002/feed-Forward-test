@@ -8,10 +8,6 @@
 #define ON_TIME 300
 #define OFF_TIME 0
 
-const char* ntpServer = "pool.ntp.org";
-const long  gmtOffset_sec = -3*3600;
-const int   daylightOffset_sec = 0;
-
 void motor_start();
 int pwm_value;
 
@@ -21,7 +17,7 @@ void setup() {
   Serial.begin(115200);
   MyWebServer::setup();
   Encoder::setup();
-  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  configTime(-10800, 0, "pool.ntp.org");
 }
 
 void loop() {
@@ -45,10 +41,11 @@ void loop() {
   int saturation = min(pwm_value, 255 - pwm_value);
 
   float position = 0;
-  float speed = 1;
-  const float acc = 0.4;
+  // float speed = 1;
+  // const float acc = 0.4;
 
-  const float max_speed = 10;
+  const float max_speed = 6;
+  const float Kp = 4;
 
   // Motor
   Encoder::left_count = 0;
@@ -60,8 +57,7 @@ void loop() {
     int last_sample = millis();
     while (millis() - last_sample < SAMPLE_INTERVAL) continue;
 
-    position += speed;
-    speed = min((speed + acc), max_speed);
+    position += max_speed;
     
     float left_error = position - Encoder::left_count;
     float right_error = position - Encoder::right_count;
@@ -69,8 +65,8 @@ void loop() {
     // int angle = Encoder::right_count - Encoder::left_count;
 
     // angle = constrain(angle, -saturation, saturation);
-    analogWrite(MOT_PWML, 50 + left_error);
-    analogWrite(MOT_PWMR, 50 + right_error);
+    analogWrite(MOT_PWML, Kp*left_error);
+    analogWrite(MOT_PWMR, Kp*right_error);
 
     // file.printf("%d %d\n", Encoder::left_count, Encoder::right_count);
     time_buffer[i] = (int) (millis() - start_time);
