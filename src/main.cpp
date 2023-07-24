@@ -44,6 +44,12 @@ void loop() {
 
   int saturation = min(pwm_value, 255 - pwm_value);
 
+  float position = 0;
+  float speed = 1;
+  const float acc = 0.4;
+
+  const float max_speed = 10;
+
   // Motor
   Encoder::left_count = 0;
   Encoder::right_count = 0;
@@ -52,13 +58,19 @@ void loop() {
   for (size_t i = 0; i < 200; i++)
   {
     int last_sample = millis();
-    while (millis() - last_sample <= SAMPLE_INTERVAL) continue;
+    while (millis() - last_sample < SAMPLE_INTERVAL) continue;
 
-    int angle = Encoder::right_count - Encoder::left_count;
+    position += speed;
+    speed = min((speed + acc), max_speed);
+    
+    float left_error = position - Encoder::left_count;
+    float right_error = position - Encoder::right_count;
 
-    angle = constrain(angle, -saturation, saturation);
-    analogWrite(MOT_PWML, pwm_value + angle);
-    analogWrite(MOT_PWMR, pwm_value - angle);
+    // int angle = Encoder::right_count - Encoder::left_count;
+
+    // angle = constrain(angle, -saturation, saturation);
+    analogWrite(MOT_PWML, 50 + left_error);
+    analogWrite(MOT_PWMR, 50 + right_error);
 
     // file.printf("%d %d\n", Encoder::left_count, Encoder::right_count);
     time_buffer[i] = (int) (millis() - start_time);
