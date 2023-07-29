@@ -36,7 +36,7 @@ void loop() {
 
   unsigned long start_time = millis();
   const int DURATION = 800;
-  const int SAMPLE_INTERVAL = 4;
+  const int SAMPLE_INTERVAL = 5;
 
   int saturation = min(pwm_value, 255 - pwm_value);
 
@@ -57,18 +57,12 @@ void loop() {
     int last_sample = millis();
     while (millis() - last_sample < SAMPLE_INTERVAL) continue;
 
-    position += max_speed;
-    
-    float left_error = position - Encoder::left_count;
-    float right_error = position - Encoder::right_count;
+    int angle = Kp*(Encoder::right_count - Encoder::left_count);
 
-    // int angle = Encoder::right_count - Encoder::left_count;
+    angle = constrain(angle, -saturation, saturation);
+    analogWrite(MOT_PWML, pwm_value + angle);
+    analogWrite(MOT_PWMR, pwm_value - angle);
 
-    // angle = constrain(angle, -saturation, saturation);
-    analogWrite(MOT_PWML, Kp*left_error);
-    analogWrite(MOT_PWMR, Kp*right_error);
-
-    // file.printf("%d %d\n", Encoder::left_count, Encoder::right_count);
     time_buffer[i] = (int) (millis() - start_time);
     right_buffer[i] = Encoder::right_count;
     left_buffer[i] = Encoder::left_count;
