@@ -29,27 +29,6 @@ void Encoder::setup()
   attachInterrupt(digitalPinToInterrupt(ENC_BR), right_B, CHANGE);
 }
 
-// void IRAM_ATTR Encoder::left_A() {
-//   if (digitalRead(ENC_AL) != digitalRead(ENC_BL)) left_count += 1;
-//   else left_count -= 1;
-// }
-
-// void IRAM_ATTR Encoder::right_A() {
-//   if (digitalRead(ENC_AR) != digitalRead(ENC_BR)) right_count += 1;
-//   else right_count -= 1;
-// }
-
-// void IRAM_ATTR Encoder::left_B() {
-//   if (digitalRead(ENC_AL) == digitalRead(ENC_BL)) left_count += 1;
-//   else left_count -= 1;
-// }
-
-// void IRAM_ATTR Encoder::right_B() {
-//   if (digitalRead(ENC_AR) == digitalRead(ENC_BR)) right_count += 1;
-//   else right_count -= 1;
-// }
-
-
 void IRAM_ATTR Encoder::left_A() {
   if (((GPIO.in >> ENC_AL) & 0x01) != ((GPIO.in >> ENC_BL) & 0x01)) left_count += 1;
   else left_count -= 1;

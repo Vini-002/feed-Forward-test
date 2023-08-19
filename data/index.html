@@ -3,33 +3,58 @@
 <head>
   <title>Segredo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" href="data:,">
+  <link rel="icon" type="image/png" href="omega_icon.png">
   <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
   <h1>Segredo</h1>
+
+  <div class="content">
+    <div class="card-grid">
+        <div class="card">
+            <p class="card-title">Fader 1</p>
+            <p class="switch">
+                <input type="range" onchange="updateSliderPWM(this)" id="slider1" min="0" max="100" step="1" value ="0" class="slider">
+            </p>
+            <p class="state">Brightness: <span id="sliderValue1"></span> &percnt;</p>
+        </div>
+        <div class="card">
+            <p class="card-title"> Fader 2</p>
+            <p class="switch">
+                <input type="range" onchange="updateSliderPWM(this)" id="slider2" min="0" max="100" step="1" value ="0" class="slider">
+            </p>
+            <p class="state">Brightness: <span id="sliderValue2"></span> &percnt;</p>
+        </div>
+        <div class="card">
+            <p class="card-title"> Fader 3</p>
+            <p class="switch">
+                <input type="range" onchange="updateSliderPWM(this)" id="slider3" min="0" max="100" step="1" value ="0" class="slider">
+            </p>
+            <p class="state">Brightness: <span id="sliderValue3"></span> &percnt;</p>
+        </div>
+    </div>
+</div>
   <h2>PWM value</h2>
   <p>
     <span id="textSliderValue">%SLIDERVALUE%</span>
   </p>
-  <p><input type="range" onchange="updateSliderPWM(this)" id="pwmSlider" min="0" max="255" value="%SLIDERVALUE%" step="28" class="slider"></p>
-  <script>
-    function updateSliderPWM(element) {
-      var sliderValue = element.value;
-      document.getElementById("textSliderValue").innerHTML = sliderValue;
-      var xhr = new XMLHttpRequest();
-      xhr.open("GET", "/slider?value="+sliderValue);
-      xhr.send();
-    }
-  </script>
+  <p><input type="range" onchange="updateSliderPWM(this)" id="pwmSlider" min="0" max="255" value="%SLIDERVALUE%" list="pwm_markers" class="slider"></p>
+  
   <p><button class="button" onclick="start()">START</button></p>
-  <script>
-    function start() {
-      var xhr = new XMLHttpRequest();
-      xhr.open("GET", "/start");
-      xhr.send();
-    }
-  </script>
   <p><a href="/view"><button class="button">VIEW</button></a></p>
+  
+  <datalist id="pwm_markers">
+    <option value="0"></option>
+    <option value="28"></option>
+    <option value="56"></option>
+    <option value="84"></option>
+    <option value="112"></option>
+    <option value="140"></option>
+    <option value="168"></option>
+    <option value="196"></option>
+    <option value="224"></option>
+    <option value="252"></option>
+  </datalist>
+  <script src="script.js"></script>
 </body>
 </html>

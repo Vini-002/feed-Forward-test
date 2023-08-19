@@ -36,7 +36,7 @@ void loop() {
 
   unsigned long start_time = millis();
   const int DURATION = 800;
-  const int SAMPLE_INTERVAL = 5;
+  const int SAMPLE_INTERVAL = 2;
 
   int saturation = min(pwm_value, 255 - pwm_value);
 
@@ -51,31 +51,34 @@ void loop() {
   Encoder::left_count = 0;
   Encoder::right_count = 0;
   motor_start();
+  pinMode(2, OUTPUT);
+  digitalWrite(2, HIGH);
+  
+  File file = LittleFS.open(filename, FILE_WRITE, true);
+  file.println("Time Left Right");
 
-  for (size_t i = 0; i < 200; i++)
+
+  for (int i = 0; i < 4000; i++)
   {
     int last_sample = millis();
     while (millis() - last_sample < SAMPLE_INTERVAL) continue;
 
-    int angle = Kp*(Encoder::right_count - Encoder::left_count);
+    // int angle = Kp*(Encoder::right_count - Encoder::left_count);
 
-    angle = constrain(angle, -saturation, saturation);
-    analogWrite(MOT_PWML, pwm_value + angle);
-    analogWrite(MOT_PWMR, pwm_value - angle);
+    // angle = constrain(angle, -saturation, saturation);
+    // analogWrite(MOT_PWML, pwm_value + angle);
+    // analogWrite(MOT_PWMR, pwm_value - angle);
 
-    time_buffer[i] = (int) (millis() - start_time);
-    right_buffer[i] = Encoder::right_count;
-    left_buffer[i] = Encoder::left_count;
+    // time_buffer[i] = (int) (millis() - start_time);
+    // right_buffer[i] = Encoder::right_count;
+    // left_buffer[i] = Encoder::left_count;
+
+    file.printf("%5d %5d %5d\n", (millis() - start_time), Encoder::left_count, Encoder::right_count);
   }
   analogWrite(MOT_PWML, 0);
   analogWrite(MOT_PWMR, 0);
-
-  File file = LittleFS.open(filename, FILE_WRITE, true);
-  file.println("Time Left Right");
-
-  for (size_t i = 0; i < 200; i++) {
-    file.printf("%5d %5d %5d\n", time_buffer[i], left_buffer[i], right_buffer[i]);
-  }
+  
+  digitalWrite(2, LOW);
   
   File exp_list = LittleFS.open("/exp_list.txt", FILE_APPEND);
   exp_list.println(file.name());
@@ -90,10 +93,10 @@ void motor_start() {
   pinMode(MOT_AR, OUTPUT);
   pinMode(MOT_BR, OUTPUT);
   pinMode(MOT_PWMR, OUTPUT);
-  digitalWrite(MOT_AL, HIGH);
-  digitalWrite(MOT_BL, LOW);
-  digitalWrite(MOT_AR, HIGH);
-  digitalWrite(MOT_BR, LOW);
-  analogWrite(MOT_PWML, pwm_value);
-  analogWrite(MOT_PWMR, pwm_value);
+  // digitalWrite(MOT_AL, HIGH);
+  // digitalWrite(MOT_BL, LOW);
+  // digitalWrite(MOT_AR, HIGH);
+  // digitalWrite(MOT_BR, LOW);
+  // analogWrite(MOT_PWMR, pwm_value);
+  // analogWrite(MOT_PWML, pwm_value);
 }
