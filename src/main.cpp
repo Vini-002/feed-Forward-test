@@ -5,8 +5,7 @@
 #include "Encoder.h"
 #include "MyWebServer.h"
 
-#define ON_TIME 300
-#define OFF_TIME 0
+#define SAMPLE_COUNT 4000
 
 void motor_start();
 int pwm_value;
@@ -24,14 +23,14 @@ void loop() {
   while (!start) continue;
   start = false;
 
-  int left_buffer[200];
-  int right_buffer[200];
-  unsigned int time_buffer[200]; 
+  int left_buffer[SAMPLE_COUNT];
+  int right_buffer[SAMPLE_COUNT];
+  unsigned int time_buffer[SAMPLE_COUNT]; 
 
   struct tm timeinfo;
   getLocalTime(&timeinfo);
   char filename[40];
-  sprintf(filename, "/testes/pwm_%03d", pwm_value);
+  sprintf(filename, "/pwm_%03d", pwm_value);
   strftime(filename + strlen(filename), 40, "_%T.csv", &timeinfo);
 
   unsigned long start_time = millis();
@@ -54,9 +53,6 @@ void loop() {
   pinMode(2, OUTPUT);
   digitalWrite(2, HIGH);
   
-  File file = LittleFS.open(filename, FILE_WRITE, true);
-  file.println("Time Left Right");
-
 
   for (int i = 0; i < 4000; i++)
   {
@@ -69,16 +65,19 @@ void loop() {
     // analogWrite(MOT_PWML, pwm_value + angle);
     // analogWrite(MOT_PWMR, pwm_value - angle);
 
-    // time_buffer[i] = (int) (millis() - start_time);
-    // right_buffer[i] = Encoder::right_count;
-    // left_buffer[i] = Encoder::left_count;
-
-    file.printf("%5d %5d %5d\n", (millis() - start_time), Encoder::left_count, Encoder::right_count);
+    time_buffer[i] = (int) (millis() - start_time);
+    right_buffer[i] = Encoder::right_count;
+    left_buffer[i] = Encoder::left_count;
   }
   analogWrite(MOT_PWML, 0);
   analogWrite(MOT_PWMR, 0);
   
   digitalWrite(2, LOW);
+  
+  File file = LittleFS.open(filename, FILE_WRITE, true);
+  file.println("Time Left Right");
+
+
   
   File exp_list = LittleFS.open("/exp_list.txt", FILE_APPEND);
   exp_list.println(file.name());

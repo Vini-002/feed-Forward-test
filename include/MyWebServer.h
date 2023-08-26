@@ -23,7 +23,7 @@ namespace MyWebServer
 }
 
 void MyWebServer::setup() {
-  LittleFS.begin();
+  LittleFS.begin(true);
   WiFi.begin(ssid, password);
 
   while (WiFi.status() != WL_CONNECTED) {
